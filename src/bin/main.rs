@@ -9,9 +9,9 @@
 
 extern crate alloc;
 
-use esp_hal::{clock::CpuClock, main};
 use esp_hal::gpio::{Input, InputConfig, Level, Output, Pull};
 use esp_hal::timer::timg::TimerGroup;
+use esp_hal::{clock::CpuClock, main};
 use esp_println::println;
 
 #[path = "../config.rs"]
@@ -70,11 +70,14 @@ fn main() -> ! {
     // LED 2 (GPIO4): on when lights are on
     let mut led_lights = Output::new(peripherals.GPIO4, Level::Low, Default::default());
     // Button (GPIO5 → GND): press toggles bedroom/dining/living room lights via HA
-    let button = Input::new(peripherals.GPIO5, InputConfig::default().with_pull(Pull::Up));
+    let button = Input::new(
+        peripherals.GPIO5,
+        InputConfig::default().with_pull(Pull::Up),
+    );
     let mut btn_prev_low = false;
     let mut btn_last_press = esp_hal::time::Instant::now();
 
-    println!("Starting MQTT...");
+    println!("Starting MQTT..");
     mqtt::run(
         network_stack,
         |switch_id, on| {
@@ -87,8 +90,7 @@ fn main() -> ! {
         },
         || {
             let is_low = button.is_low();
-            let debounced = btn_last_press.elapsed()
-                > esp_hal::time::Duration::from_millis(200);
+            let debounced = btn_last_press.elapsed() > esp_hal::time::Duration::from_millis(200);
             if is_low && !btn_prev_low && debounced {
                 btn_prev_low = true;
                 btn_last_press = esp_hal::time::Instant::now();
